@@ -90,11 +90,17 @@ jobs:
           aws elbv2 delete-load-balancer --load-balancer-arn $lb || true
         done
 
-    - name: Terraform Destroy
+    - name: Terraform Destroy EKS
       if: github.event.inputs.action == 'destroy'
       run: |
         cd terraform
         terraform destroy -target=module.eks -auto-approve
+
+
+    - name: Terraform Destroy
+      if: github.event.inputs.action == 'destroy'
+      run: |
+        cd terraform
         terraform destroy -auto-approve
 
     - name: Configure kubectl
