@@ -64,6 +64,28 @@ jobs:
     - name: Terraform Destroy
       if: github.event.inputs.action == 'destroy'
       run: |
+        aws eks update-kubeconfig \
+        --region us-east-1 \
+        --name migration-eks-cluster || true
+
+      #- name: Pre-clean Kubernetes (IMPORTANT)
+        run: |
+         kubectl get nodes || true
+         kubectl delete svc --all -A || true
+         echo "Waiting for AWS to delete load balancers..."
+         sleep 180
+
+    - name: Force delete remaining Load Balancers
+      if: github.event.inputs.action == 'destroy'
+      run: |
+        LBS=$(aws elbv2 describe-load-balancers --query "LoadBalancers[].LoadBalancerArn" --output text)
+
+        for lb in $LBS; do
+          echo "Deleting LB: $lb"
+          aws elbv2 delete-load-balancer --load-balancer-arn $lb || true
+        done
+
+      run: |
         cd terraform
         terraform destroy -target=module.eks -auto-approve
         terraform destroy -auto-approve
@@ -73,11 +95,6 @@ jobs:
         aws eks update-kubeconfig \
         --region us-east-1 \
         --name migration-eks-cluster
-
-    - name: Pre-clean Kubernetes (IMPORTANT)
-      run: |
-        kubectl get nodes
-        kubectl delete svc --all -A || true
 
     - name: Install Helm
       run: |
