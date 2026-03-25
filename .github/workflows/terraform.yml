@@ -105,16 +105,19 @@ jobs:
         terraform destroy -auto-approve
 
     - name: Configure kubectl
+      if: github.event.inputs.action == 'apply' || github.event_name == 'push'
       run: |
         aws eks update-kubeconfig \
         --region us-east-1 \
         --name migration-eks-cluster
 
     - name: Install Helm
+      if: github.event.inputs.action == 'apply' || github.event_name == 'push'
       run: |
          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
     - name: Install Monitoring
+      if: github.event.inputs.action == 'apply' || github.event_name == 'push'
       run: |
         chmod +x ./helm/prometheus.sh
         ./helm/prometheus.sh
